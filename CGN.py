@@ -5,18 +5,19 @@ def solve_cgn(A, b, num_iter = int(1e5), x_0 = None, tol = 1e-12):
     '''
     Iterative Conjugate Gradient on Normal equations solver of Ax = b
 
-    INPUTS: 
-    A : (N x N) nonsymmetric matrix
-    b : (N x 1) vector
-    num_iter (optional) : Number of iterations before forced termination
-    x_0 : (N x 1) initial guess vector 
-    tol (optional) : residual tolerance for approximating convergence 
+    Parameters:
+        INPUTS: 
+        A : (N x N) nonsymmetric matrix
+        b : (N x 1) vector
+        num_iter (optional) : Number of iterations before forced termination
+        x_0 : (N x 1) initial guess vector 
+        tol (optional) : residual tolerance for approximating convergence 
 
-    OUTPUT: 
-    x : (N x 1) vector solution to Ax = b
-    res : vector of residual norms 
-    path : trajectory of steps from `x_0` to x_final
-    conv : boolean indicating convergence within `num_iter` iterations
+        OUTPUT: 
+        x : (N x 1) vector solution to Ax = b
+        res : vector of residual norms 
+        path : trajectory of steps from `x_0` to x_final
+        conv : boolean indicating convergence within `num_iter` iterations
 
     Implemented via paper "How Fast Are Nonsymmetric Matrix Iterations" 
     by Nachtigal, Reddy, and Trefethen.

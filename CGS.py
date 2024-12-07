@@ -3,16 +3,16 @@ import numpy as np
 def solve_cgs(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
     '''
     Ax=b iterative solver CGS (Conjugate Gradient Squared Method)
-    Inputs: 
-    Matrix A (square, non-symmetric, n x n)
-    Vector b (n x 1)
-    Optional: 
-    x_0 (initial guess)
-    max_iter: maximum number of iterations, adjust as necessary
-    tolerance tol: terminate if norm of residual is small enough 
-    Outputs: 
-    Vector x (n x 1)
-    Bool converged (info on whether we converged to desired tol)
+    Parameters:
+        Inputs: 
+        Matrix A (square, non-symmetric, n x n)
+        Vector b (n x 1)
+        Optional: 
+        x_0 (initial guess)
+        max_iter: maximum number of iterations, adjust as necessary
+        tolerance tol: terminate if norm of residual is small enough 
+        Outputs: 
+        Vector x (n x 1)
     Implemented via paper "How Fast Are Nonsymmetric Matrix Iterations" 
     by Nachtigal, Reddy, and Trefethen.
     '''
@@ -63,8 +63,7 @@ print(np.linalg.cond(A))
 b = np.random.rand(n)
 
 x_cgs = solve_cgs(A, b)
-
-x_bicg, info = bicg(A, b)
+print("Solution using cgs:\n", x_cgs)
 
 # Solve using NumPy's direct solver
 x_direct = np.linalg.solve(A, b)
