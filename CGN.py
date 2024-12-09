@@ -1,7 +1,7 @@
 import numpy as np
 from IPython.display import clear_output
 
-def solve_cgn(A, b, num_iter = int(1e5), x_0 = None, tol = 1e-12):
+def solve_cgn(A, b, max_iter = int(1e5), x0 = None, tol = 1e-12):
     '''
     Iterative Conjugate Gradient on Normal equations solver of Ax = b
 
@@ -10,7 +10,7 @@ def solve_cgn(A, b, num_iter = int(1e5), x_0 = None, tol = 1e-12):
         A : (N x N) nonsymmetric matrix
         b : (N x 1) vector
         num_iter (optional) : Number of iterations before forced termination
-        x_0 : (N x 1) initial guess vector 
+        x0 : (N x 1) initial guess vector 
         tol (optional) : residual tolerance for approximating convergence 
 
         OUTPUT: 
@@ -23,36 +23,37 @@ def solve_cgn(A, b, num_iter = int(1e5), x_0 = None, tol = 1e-12):
     by Nachtigal, Reddy, and Trefethen.
     '''
 
-    A = np.matrix(A)
-    x_0 = np.zeros((A.shape[1] , ))  # initial random guess on the unit hypersphere
+    # Ensure A and b are NumPy arrays
+    A = np.array(A)
+    b = np.array(b)
+    m, n = A.shape
 
-    beta = [0]
-    p = [np.zeros_like(b)]
-    r = [np.array(np.array(b) - A @ x_0).reshape(-1, )]
-    alpha = []
-    x = [x_0]
-    t = 0
-    print(r[-1], np.array(r[-1]))
-
-
-    while np.linalg.norm(np.array(r[-1]).reshape(-1, )) >= tol:   
-        if t >= num_iter:
-            break
-        p.append(np.array(A.H @ (np.array(r[-1]).reshape(-1, )) + beta[-1] * (np.array(p[-1]).reshape(-1, ))).reshape(p[0].shape[0], ))
-        alpha.append(np.linalg.norm(A.H @ np.array(r[-1]).reshape(-1, ))**2 / np.linalg.norm(A @ np.array(p[-1]).reshape(-1, ))**2)
-        x.append(np.array(x[-1]).reshape(-1, ) + alpha[-1] * np.array(p[-1]).reshape(-1, ))
-        r.append(np.array(np.array(r[-1]).reshape(-1, ) - alpha[-1] * (A @ np.array(p[-1]).reshape(-1, ))).reshape(r[0].shape[0], ))
-        beta.append(np.linalg.norm(A.H @ np.array(r[-1]).reshape(-1, ))**2 / np.linalg.norm(A @ np.array(r[-2]).reshape(-1, ))**2)
-
-        if t % 100 == 0:
-            print(f'Iteration: {t} \t Error: {np.linalg.norm(np.array(r[-1]).reshape(-1, ))}')
-        if t % 500 == 0:
-            clear_output(wait = True)
-        t += 1
-    
-    if t < num_iter:
-        print(f"CGN converged within {num_iter} iterations  :)")
+    # Initialize variables
+    if x0 is None:
+        x = np.zeros(n)  # Initial guess
     else:
-        print(f"CGN did not converge within {num_iter} iterations  :(")
-    
-    return x[-1], np.linalg.norm(np.array(r), axis = 1), x, t < num_iter
+        x = np.array(x0)
+
+    r = A.T @ (b - A @ x)  # Initial residual
+    p = r.copy()  # Initial search direction
+    residuals = [np.linalg.norm(r)]
+    converged = False
+
+    for k in range(max_iter):
+        Ap = A @ p
+        alpha = np.dot(r, r) / np.dot(Ap, Ap)  # Step size
+        x = x + alpha * p  # Update solution
+        r_new = r - alpha * (A.T @ Ap)  # Update residual
+
+        # Check for convergence
+        residual_norm = np.linalg.norm(r_new)
+        residuals.append(residual_norm)
+        if residual_norm < tol:
+            converged = True
+            break
+
+        beta = np.dot(r_new, r_new) / np.dot(r, r)  # Update factor
+        p = r_new + beta * p  # Update search direction
+        r = r_new  # Update residual
+
+    return x, residuals, converged
