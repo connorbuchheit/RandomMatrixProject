@@ -56,7 +56,13 @@ def solve_cgs(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
         res_norm = np.linalg.norm(r)
         residuals.append(np.linalg.norm(res_norm))
         if res_norm < tol:
-            print("Converged.")
             converged = True
-            return x, residuals, converged 
-    return x, residuals, converged 
+            return [x, residuals, converged]
+    return [x, residuals, converged]
+
+import matrixgenerators
+
+b = np.random.rand(8)
+A = matrixgenerators.cond_num_matrix(8, 10)
+res = solve_cgs(A, b)
+print(res)
