@@ -35,11 +35,9 @@ def make_matrix_sparse(A, sparse_percent):
         A_sparse (ndarray): n x n matrix with the specified sparsity.
     """
     # Be mindful, this method enforces sparsity on existing matrices.
-    mask = np.random.rand(A.shape) > sparse_percent 
+    mask = np.random.rand(A.shape[0], A.shape[1]) > sparse_percent 
     A_sparse = A * mask
     return A_sparse
-
-import numpy as np
 
 def generate_eigenvalue_range(n, eigen_min, eigen_max):
     """
@@ -67,5 +65,3 @@ def generate_eigenvalue_range(n, eigen_min, eigen_max):
     V, _ = np.linalg.qr(np.random.randn(n, n))
     A = V @ Sigma @ V.T
     return A, eigenvalues
-
-
