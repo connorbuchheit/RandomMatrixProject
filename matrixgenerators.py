@@ -6,7 +6,7 @@ def cond_num_matrix(n, cond_num):
     
     Parameters:
         n (int): Size of the matrix.
-        cond_num (float): Desired condition number.
+        cond_num (float): condition number.
     
     Returns:
         A (ndarray): n x n matrix with the specified condition number.
@@ -23,3 +23,18 @@ def cond_num_matrix(n, cond_num):
     
     return A
 
+def make_matrix_sparse(A, sparse_percent):
+    """
+    Generate an n x n random matrix with a specified condition number.
+    
+    Parameters:
+        A: A random matrix 
+        sparse_percent (float): percentage of entries that are 0, between 0 and 1
+    
+    Returns:
+        A_sparse (ndarray): n x n matrix with the specified sparsity.
+    """
+    # Be mindful, this method enforces sparsity on existing matrices.
+    mask = np.random.rand(A.shape) > sparse_percent 
+    A_sparse = A * mask
+    return A_sparse
