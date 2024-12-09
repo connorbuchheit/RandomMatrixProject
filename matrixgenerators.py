@@ -38,3 +38,34 @@ def make_matrix_sparse(A, sparse_percent):
     mask = np.random.rand(A.shape) > sparse_percent 
     A_sparse = A * mask
     return A_sparse
+
+import numpy as np
+
+def generate_eigenvalue_range(n, eigen_min, eigen_max):
+    """
+    Generate a random matrix with eigenvalues uniformly distributed between a given range.
+    Less clustered eigenvalues will have a high (eigen_max - eigen_min), more clustereed will have lower.
+    
+    Parameters:
+        n (int): Size of the matrix (n x n).
+        eigen_min (float): Minimum eigenvalue.
+        eigen_max (float): Maximum eigenvalue.
+    
+    Returns:
+        A (ndarray): Generated n x n matrix with uniformly distributed eigenvalues.
+        eigenvalues (ndarray): Eigenvalues used in the matrix.
+    """
+    if n < 2:
+        raise ValueError("Matrix size n must be at least 2 to include eigen_min and eigen_max.")
+    
+    # generate n-2 random evals including the min and max eigenvalue we set, n in total
+    rand_eigenvalues = np.random.uniform(low=eigen_min, high=eigen_max, size=n-2)
+    eigenvalues = np.concatenate(([eigen_min], rand_eigenvalues, [eigen_max]))
+    Sigma = np.diag(eigenvalues)  # Create diagonal matrix of eigenvalues
+    
+    # generate random orthogonal matrices, calculate eigendecomp
+    V, _ = np.linalg.qr(np.random.randn(n, n))
+    A = V @ Sigma @ V.T
+    return A, eigenvalues
+
+
