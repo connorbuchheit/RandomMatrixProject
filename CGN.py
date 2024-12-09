@@ -34,10 +34,10 @@ def solve_cgn(A, b, max_iter = int(1e5), x0 = None, tol = 1e-12):
     else:
         x = np.array(x0)
 
-    r = A.T @ (b - A @ x)  # Initial residual
-    p = r.copy()  # Initial search direction
+    r = A.T @ (b - A @ x)  # Initial residual, this seems to work better than the original paper (?)
+    p = r.copy()  # Initial search direction (just initialize to r rather than 0)
     residuals = [np.linalg.norm(r)]
-    converged = False
+    converged = False # this indicates that the iteration converged in less than max_iter steps
 
     for k in range(max_iter):
         Ap = A @ p
