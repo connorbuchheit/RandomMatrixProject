@@ -11,12 +11,16 @@ def solve_cgs(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
         x_0 (initial guess)
         max_iter: maximum number of iterations, adjust as necessary
         tolerance tol: terminate if norm of residual is small enough 
+
         Outputs: 
         Vector x (n x 1)
+        Vector of residuals
+        Converged (Boolean) 
     Implemented via paper "How Fast Are Nonsymmetric Matrix Iterations" 
     by Nachtigal, Reddy, and Trefethen.
     '''
     n = len(b)
+    converged = False
     if x_0 is None:
         x = np.zeros(n) # initial guess all zeroes if no initial guess 
     else:
@@ -26,10 +30,11 @@ def solve_cgs(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
     if A.shape[0] != n or A.shape[1] != n: # ensure shapes of matrices are fine
         raise ValueError(f"A is of the wrong dimension: {A.shape[0]} x {A.shape[1]}, not {n} x {n}.")
     
-   
+    
     r = b - A @ x 
     r_tilde = r.copy() 
     q = np.zeros(n); p = np.zeros(n); rho = 1
+    residuals = [np.linalg.norm(r)]
     for _ in range(num_iter): # following steps in paper
         rho_old = rho
         rho = np.vdot(r_tilde, r)
@@ -49,23 +54,9 @@ def solve_cgs(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
         x = x + alpha * (u + q)
         # check convergence
         res_norm = np.linalg.norm(r)
+        residuals.append(np.linalg.norm(res_norm))
         if res_norm < tol:
-            print("Converged early.")
-            return x
-    return x 
-
-
-n = 100
-A = np.random.rand(n,n)
-A[0,1] += 1
-A *= 100
-print(np.linalg.cond(A))
-b = np.random.rand(n)
-
-x_cgs = solve_cgs(A, b)
-print("Solution using cgs:\n", x_cgs)
-
-# Solve using NumPy's direct solver
-x_direct = np.linalg.solve(A, b)
-
-print("Solution using NumPy direct solver:\n", x_direct)
+            print("Converged.")
+            converged = True
+            return x, residuals, converged 
+    return x, residuals, converged 
