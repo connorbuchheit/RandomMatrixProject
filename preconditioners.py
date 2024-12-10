@@ -3,7 +3,7 @@ import time
 from scipy.sparse.linalg import spilu
 from scipy.sparse import csr_matrix, csc_matrix
 
-def solve_cgs_ilu(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
+def solve_cgs_ilu(A, b, x_0=None, num_iter=1000, tol=1e-9):
     '''
     Ax=b iterative solver CGS (Conjugate Gradient Squared Method)
     Parameters:
@@ -75,77 +75,54 @@ def solve_cgs_ilu(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
     return [x, residuals, converged]
 
 
-
-def solve_cgs_jacobi(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
-    '''
-    Ax=b iterative solver CGS (Conjugate Gradient Squared Method) with Jacobi Preconditioning.
-    Parameters:
-        Inputs: 
-        Matrix A (square, non-symmetric, n x n)
-        Vector b (n x 1)
-        Optional: 
-        x_0 (initial guess)
-        max_iter: maximum number of iterations, adjust as necessary
-        tolerance tol: terminate if norm of residual is small enough 
-
-        Outputs: 
-        Vector x (n x 1)
-        Vector of residuals
-        Converged (Boolean) 
-    Implemented via paper "How Fast Are Nonsymmetric Matrix Iterations" 
-    by Nachtigal, Reddy, and Trefethen.
-    '''
+def solve_cgs_jacobi(A, b, x_0=None, num_iter=10000, tol=1e-12):
     n = len(b)
-    converged = False
     if x_0 is None:
-        x = np.zeros(n)  # initial guess all zeroes if no initial guess 
+        x = np.zeros(n)
     else:
-        if len(x_0) != n:  # ensure correct shape
-            raise ValueError(f"Initial guess of wrong dimension: {len(x_0)} instead of {n}")
         x = x_0.copy()
-    if A.shape[0] != n or A.shape[1] != n:  # ensure shapes of matrices are fine
-        raise ValueError(f"A is of the wrong dimension: {A.shape[0]} x {A.shape[1]}, not {n} x {n}.")
-    
-    # === New: Compute Jacobi preconditioner ===
-    M = np.diag(A.T @ A)  # Diagonal of A^T A
-    if np.any(M == 0):
-        raise ValueError("Jacobi preconditioner contains zero values.")
-    M_inv = 1.0 / M       # Inverse of diagonal elements
 
-    # === Initialize residuals with preconditioning ===
-    r = b - A @ x 
-    r_tilde = r.copy() 
-    z = M_inv * r         # Preconditioned residual
-    z_tilde = M_inv * r_tilde  # Preconditioned shadow residual
-    q = np.zeros(n); p = np.zeros(n); rho = 1
-    residuals = [np.linalg.norm(r)]
+    # Initial residual and shadow residual
+    r = b - A @ x
+    r_tilde = r.copy()
     
-    for _ in range(num_iter):  # following steps in paper
-        rho_old = rho
-        rho = np.vdot(z_tilde, z)  # Use preconditioned residual here
-        beta = rho / rho_old 
-        u = z + beta * q
-        p = u + beta * (q + beta * p) 
-        v = A @ p 
-        sigma = np.vdot(z_tilde, v)  # Use preconditioned shadow residual here
-        if abs(sigma) < 1e-12:
-            print("Warning: Sigma is too small. Restarting iteration.")
-            q = np.zeros_like(q)
-            p = np.zeros_like(p)
-            continue
+    M_inv = lambda v: v/np.diag(A)  
+
+    u = M_inv(r)
+    rho = np.dot(r_tilde, r)
+    p = np.zeros_like(r)
+    q = np.zeros_like(r)
+    residuals = [np.linalg.norm(r)]
+
+    for i in range(num_iter):
+        rho_prev = rho
+        rho = np.dot(r_tilde, r)
+        if rho == 0:
+            raise ValueError("Breakdown: rho became zero.")
+        
+        beta = 0 if i == 0 else rho / rho_prev
+        u = M_inv(r) + beta * q
+        p = u + beta * (q + beta * p)
+        v = A @ p
+        sigma = np.dot(r_tilde, v)
+        if sigma == 0:
+            raise ValueError("Breakdown: sigma became zero.")
+        
         alpha = rho / sigma
         q = u - alpha * v
-        r = r - alpha * A @ (u + q) 
-        z = M_inv * r  # Update preconditioned residual
-        x = x + alpha * (u + q)
+        u_hat = M_inv(u + q)
+        x = x + alpha * u_hat
         
-        # Check convergence
-        res_norm = np.linalg.norm(r)
-        residuals.append(res_norm)
-        if res_norm < tol:
-            converged = True
-            return [x, residuals, converged]
-    return [x, residuals, converged]
+        # Update residuals
+        r = r - alpha * (A @ u_hat)
+        residuals.append(np.linalg.norm(r))
+        
+        # Check for convergence
+        if residuals[-1] < tol:
+            return [x, residuals, True]
+    
+    return [x, residuals, False]
+
 
 def solve_cgn_ilu(A, b, max_iter=int(1e5), x0=None, tol=1e-12):
     '''
