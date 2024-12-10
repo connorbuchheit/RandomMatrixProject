@@ -1,0 +1,6 @@
+Sparsity: 0.0, Condition Number: 6.64e+02
+Sparsity: 0.1, Condition Number: 2.65e+02
+Sparsity: 0.3, Condition Number: 1.21e+03
+Sparsity: 0.5, Condition Number: 3.05e+02
+Sparsity: 0.7, Condition Number: 7.98e+01
+Sparsity: 0.9, Condition Number: 8.11e+18
