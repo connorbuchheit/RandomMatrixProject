@@ -1,0 +1,9 @@
+Sparsity: 0, Condition Number: 7.27e+02
+Sparsity: 0.1, Condition Number: 1.24e+02
+Sparsity: 0.3, Condition Number: 1.17e+02
+Sparsity: 0.5, Condition Number: 9.44e+02
+Sparsity: 0.7, Condition Number: 6.41e+02
+Sparsity: 0.9, Condition Number: 4.03e+17
+
+We see that, with increasing sparsity we have an incrasingly ill-conditioned matrix
+Interpretation: Super high sparsity makes lower rank
