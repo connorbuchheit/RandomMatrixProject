@@ -1,5 +1,6 @@
 import numpy as np
 from IPython.display import clear_output
+import time
 
 def solve_cgn(A, b, max_iter = int(1e5), x0 = None, tol = 1e-12):
     '''
@@ -28,7 +29,9 @@ def solve_cgn(A, b, max_iter = int(1e5), x0 = None, tol = 1e-12):
     b = np.array(b)
     m, n = A.shape
 
-    # Initialize variables
+    # Start algorithm
+    start = time.time()
+
     if x0 is None:
         x = np.zeros(n)  # Initial guess
     else:
@@ -56,4 +59,7 @@ def solve_cgn(A, b, max_iter = int(1e5), x0 = None, tol = 1e-12):
         p = r_new + beta * p  # Update search direction
         r = r_new  # Update residual
 
-    return x, residuals, converged
+    end = time.time()
+    duration = end-start
+
+    return x, residuals, converged, duration
