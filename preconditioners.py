@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from scipy.sparse.linalg import spilu
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, csc_matrix
 
 def solve_cgs_ilu(A, b, x_0=None, num_iter=int(1e5), tol=1e-9):
     '''
@@ -266,8 +266,146 @@ def solve_cgn_jacobi(A, b, max_iter=int(1e5), x0=None, tol=1e-12):
     return x, residuals, converged, duration
 
 
-def solve_qmr_ilu():
-    pass 
+def solve_qmr_ilu(A, b, x_0=None, num_iter=int(1e5), tol=1e-6):
+    '''
+    Solve Ax=b using Quasi-Minimal Residual (QMR) method with ILU preconditioning.
 
-def solve_qmr_jacobi():
-    pass
+    Parameters:
+        INPUTS: 
+        A : (N x N) nonsymmetric matrix
+        b : (N x 1) vector
+        num_iter (optional) : Number of iterations before forced termination
+        x_0 : (N x 1) initial guess vector 
+        tol (optional) : residual tolerance for approximating convergence 
+
+        OUTPUT: 
+        x : (N x 1) vector solution to Ax = b
+        Implemented from QMR: a quasi-minimal residual method for non-Hermitian linear systems
+        by Freund and Nachtigal
+    '''
+    n = len(b)
+    if x_0 is None:
+        x = np.zeros(n)
+    else:
+        x = x_0.copy()
+    
+    if A.shape[0] != n or A.shape[1] != n:  # Ensure shapes of matrices are fine
+        raise ValueError(f"A is of the wrong dimension: {A.shape[0]} x {A.shape[1]}, not {n} x {n}.")
+    
+    # Convert A to a sparse matrix for ILU preconditioning
+    A_sparse = csc_matrix(A)
+
+    # Get the ILU preconditioner (use spilu to compute it)
+    ilu = spilu(A_sparse)
+    
+    # Define a function to apply the preconditioner
+    def M_inv(v):
+        return ilu.solve(v)
+    
+    # Initialize residuals and variables
+    r = b - A @ x  # Initial residual
+    r_tilde = r.copy()  # First residual
+    rho_prev = np.vdot(r_tilde, r)
+    v = r.copy()
+    p = np.zeros_like(r)
+    w = np.zeros_like(r)
+    q = np.zeros_like(r)
+
+    for _ in range(num_iter):
+        # Apply preconditioning to r and r_tilde
+        v = M_inv(r)  # Preconditioned v
+        w = M_inv(r_tilde)  # Preconditioned w
+        
+        alpha = np.dot(w, A @ v)
+        u = r - alpha * v
+        beta = np.dot(w, A @ u)
+        
+        if abs(beta) < tol or abs(alpha) < tol:
+            print("Warning: Too small values")
+        
+        p = v + beta * p
+        q = w + beta * q
+        x = x + alpha * p
+        r = r - alpha * (A @ p)
+        r_tilde = r_tilde - alpha * A.T @ q
+        rho = np.dot(r_tilde, r)
+
+        # Check convergence
+        if np.linalg.norm(r) < tol:
+            print("Converged early")
+            return x
+    
+        rho_prev = rho
+    
+    print("Didn't converge :(")
+    return x
+
+def solve_qmr_jacobi(A, b, x_0=None, num_iter=int(1e5), tol=1e-6):
+    '''
+    Solve Ax=b using Quasi-Minimal Residual (QMR) method with Jacobi Preconditioning.
+
+    Parameters:
+        INPUTS: 
+        A : (N x N) nonsymmetric matrix
+        b : (N x 1) vector
+        num_iter (optional) : Number of iterations before forced termination
+        x_0 : (N x 1) initial guess vector 
+        tol (optional) : residual tolerance for approximating convergence 
+
+        OUTPUT: 
+        x : (N x 1) vector solution to Ax = b
+        Implemented from QMR: a quasi-minimal residual method for non-Hermitian linear systems
+        by Freund and Nachtigal
+    '''
+
+    n = len(b)
+    if x_0 is None:
+        x = np.zeros(n)
+    else:
+        x = x_0.copy()
+    
+    if A.shape[0] != n or A.shape[1] != n:  # ensure shapes of matrices are fine
+        raise ValueError(f"A is of the wrong dimension: {A.shape[0]} x {A.shape[1]}, not {n} x {n}.")
+
+    # Jacobi Preconditioning: D is the diagonal of A
+    D_inv = np.diag(1.0 / np.diag(A))  # Inverse of diagonal of A (Jacobi preconditioner)
+    
+    # Initialize residuals and vectors
+    r = b - A @ x  # Initial residual
+    r_tilde = r.copy()  # First residual
+    rho_prev = np.vdot(r_tilde, r)
+    v = r.copy()  # Direction vectors
+    p = np.zeros_like(r)
+    w = np.zeros_like(r)
+    q = np.zeros_like(r)
+
+    for _ in range(num_iter):
+        # Apply Jacobi preconditioning: z = D_inv * r
+        z = D_inv @ r
+        
+        v = z / rho_prev
+        w = r_tilde / rho_prev  # Biorthogonalization step
+        alpha = np.dot(w, A @ v)
+        
+        u = r - alpha * v
+        beta = np.dot(w, A @ u)
+        
+        if abs(beta) < tol or abs(alpha) < tol:
+            print("Warning: Too small values for alpha or beta, iteration might be unstable.")
+        
+        p = v + beta * p
+        q = w + beta * q
+        x = x + alpha * p
+        r = r - alpha * (A @ p)
+        r_tilde = r_tilde - alpha * A.T @ q
+        rho = np.dot(r_tilde, r)
+
+        # Check convergence
+        if np.linalg.norm(r) < tol:
+            print("Converged early")
+            return x
+    
+        rho_prev = rho  # Update rho for the next iteration
+
+    print("Didn't converge :(")
+    return x
